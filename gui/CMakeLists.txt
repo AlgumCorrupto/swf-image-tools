@@ -1,4 +1,3 @@
-find_package(SDL3 CONFIG REQUIRED)
 find_package(OpenGL REQUIRED)
 
 add_executable(gui WIN32
@@ -17,4 +16,11 @@ target_link_libraries(gui
     PRIVATE imgui
     PRIVATE core
     PRIVATE SDL3::SDL3
+    PRIVATE -static-libgcc
+    PRIVATE -static-libstdc++
 )
+
+if(WIN32)
+    # Statically links GCC runtime, standard library, and winpthread
+    target_link_libraries(gui PRIVATE -static winpthread -dynamic)
+endif()

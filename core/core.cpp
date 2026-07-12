@@ -1,5 +1,5 @@
 #include <lodepng.h>
-#include <libimagequant.h>
+#include <quant.h>
 #include <flashpck.h>
 #include <cstdint>
 
@@ -10,9 +10,137 @@
 #include <vector>
 #include <iostream>
 
+#include <SDL3/SDL.h>
+
 namespace core {
 
 static PckData pck = {0,0,0};
+
+
+IndexedImage::IndexedImage(RgbaImage rgba, uint32_t color_count) {
+    width = rgba.width;
+    height = rgba.height;
+
+    indexes.resize(width * height);
+    color_table.resize(color_count);
+
+    liq_attr* attr = liq_attr_create();
+    liq_set_max_colors(attr, color_count);
+
+    liq_image* image = liq_image_create_rgba(
+        attr,
+        rgba.colors.data(),
+        width,
+        height,
+        0.0
+    );
+
+    liq_result* result;
+    if (liq_image_quantize(image, attr, &result) != LIQ_OK) {
+        liq_image_destroy(image);
+        liq_attr_destroy(attr);
+        throw std::runtime_error("Failed to quantize image.");
+    }
+
+    if (liq_write_remapped_image(
+            result,
+            image,
+            indexes.data(),
+            indexes.size()) != LIQ_OK)
+    {
+        liq_result_destroy(result);
+        liq_image_destroy(image);
+        liq_attr_destroy(attr);
+        throw std::runtime_error("Failed to remap image.");
+    }
+
+    const liq_palette* palette = liq_get_palette(result);
+
+    color_table.resize(palette->count);
+
+    for (unsigned i = 0; i < palette->count; ++i) {
+        color_table[i].r = palette->entries[i].r;
+        color_table[i].g = palette->entries[i].g;
+        color_table[i].b = palette->entries[i].b;
+        color_table[i].a = palette->entries[i].a;
+    }
+
+    liq_result_destroy(result);
+    liq_image_destroy(image);
+    liq_attr_destroy(attr);
+}
+
+void IndexedImage::resize(uint32_t new_width, uint32_t new_height)
+{
+    std::vector<uint8_t> new_indexes(new_width * new_height);
+
+    for (uint32_t y = 0; y < new_height; ++y) {
+        uint32_t sy = y * height / new_height;
+
+        for (uint32_t x = 0; x < new_width; ++x) {
+            uint32_t sx = x * width / new_width;
+
+            new_indexes[y * new_width + x] =
+                indexes[sy * width + sx];
+        }
+    }
+
+    indexes = std::move(new_indexes);
+    width = new_width;
+    height = new_height;
+}
+
+RgbaImage::RgbaImage(std::string filename)
+{
+    std::vector<unsigned char> image;
+
+    unsigned error = lodepng::decode(
+        image,
+        width,
+        height,
+        filename
+    );
+
+    if (error)
+        throw std::runtime_error(lodepng_error_text(error));
+
+    colors.resize(width * height);
+
+    for (size_t i = 0; i < colors.size(); ++i) {
+        colors[i].r = image[i * 4 + 0];
+        colors[i].g = image[i * 4 + 1];
+        colors[i].b = image[i * 4 + 2];
+        colors[i].a = image[i * 4 + 3];
+    }
+}
+
+void RgbaImage::resize(uint32_t new_width, uint32_t new_height)
+{
+    SDL_Surface* src = SDL_CreateSurfaceFrom(
+        width,
+        height,
+        SDL_PIXELFORMAT_RGBA32,
+        colors.data(),
+        width * sizeof(RGBAColor)
+    );
+
+    SDL_Surface* dst = SDL_CreateSurface(
+        new_width,
+        new_height,
+        SDL_PIXELFORMAT_RGBA32
+    );
+
+    SDL_BlitSurfaceScaled(src, nullptr, dst, nullptr, SDL_SCALEMODE_LINEAR);
+
+    colors.resize(new_width * new_height);
+    memcpy(colors.data(), dst->pixels, colors.size() * sizeof(RGBAColor));
+
+    width = new_width;
+    height = new_height;
+
+    SDL_DestroySurface(src);
+    SDL_DestroySurface(dst);
+}
 
 void load_pck(std::string filename) {
     if(pck.og_base_address != 0) {
@@ -42,7 +170,7 @@ std::vector<Ps2Image> get_images() {
     swfFILE* file = (swfFILE*)pck.actual_data;
     for(int o_i = 1; o_i < file->objectCount; o_i++) {
         swfOBJECT_header* header =  pckData_get_obj(&pck, o_i);
-        if(header->objectType == OBJ_BITMAP) {
+        if(header->objectType == SWF_OBJ_BITMAP) {
             swfBITMAP* bmp = (swfBITMAP*)header;
             bmpInfo1* info1 = (bmpInfo1*)pckData_get_ptr_from_og(&pck, bmp->ptr_to_info1);
             out.push_back(Ps2Image(info1));
@@ -188,7 +316,20 @@ Ps2Image::Ps2Image(bmpInfo1* info)
 }
 
 void Ps2Image::replace(const std::string& filename) {
-    image = IndexedImage(filename, image.color_table.size());
+    auto new_image = IndexedImage(filename, image.color_table.size());
+    if(
+        image.width * new_image.width != 
+        image.height * new_image.height
+    )
+        throw std::runtime_error("Aspect ratios doesn't match");
+
+    if (new_image.width != image.width ||
+        new_image.height != image.height)
+    {
+        new_image.resize(image.width, image.height);
+    }
+
+    image = std::move(new_image);
     write();
 }
 

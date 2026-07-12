@@ -6,6 +6,11 @@
 #include <vector>
 
 namespace core {
+
+struct IndexedImage;
+struct RgbaImage;
+struct Ps2Image;
+
 // internal representatnion
 struct IndexedImage {
     std::vector<uint8_t> indexes;
@@ -14,7 +19,9 @@ struct IndexedImage {
 
     // constructor from png image
     IndexedImage(std::string filename, uint32_t color_count);
+    IndexedImage(RgbaImage rgba, uint32_t color_count); // make this
     void save(const std::string &fname) const;
+    void resize(uint32_t new_width, uint32_t new_height); // make this
 
     // constructor from bmpInfo1
     IndexedImage(bmpInfo1* info);
@@ -28,8 +35,9 @@ struct RgbaImage {
 
     // constructor from indexed image
     RgbaImage(IndexedImage indexed);
+    RgbaImage(std::string filename); // make this
+    void resize(uint32_t new_width, uint32_t new_height); // make this
     void save(const std::string &fname);
-    RgbaImage() = default;
 };
 
 // the representation of the image 

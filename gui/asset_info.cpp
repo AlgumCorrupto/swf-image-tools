@@ -48,7 +48,7 @@ void rip_image_cb(void* userdata, const char * const * filelist, int filter) {
         SDL_ShowSimpleMessageBox(
             SDL_MESSAGEBOX_ERROR,
             "Image does not match",
-            "Input image needs to be the same resolution as output",
+            "Input image needs to be the same aspect ratio as output",
             sdls.w
         );
     }
@@ -106,7 +106,7 @@ void assetinfo::draw() {
     snprintf(addr_fmt, sizeof(addr_fmt), "0x%.8x (bmpInfo1)", apps.images[apps.current_selected].image.address);
     ImGui::InputText("##base_addr", addr_fmt, IM_ARRAYSIZE(addr_fmt), ImGuiInputTextFlags_ReadOnly);
 
-    if(ImGui::Button("Replace (must be exact same resolution)")) {
+    if(ImGui::Button("Replace (must be exact same aspect ratio)")) {
         replace_image();
     }
     if(ImGui::Button("Rip image")) {

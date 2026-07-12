@@ -5,7 +5,7 @@
 #include <backends/imgui_impl_sdl3.h>
 #include <backends/imgui_impl_opengl2.h>
 #include <SDL3/SDL_opengl.h>
-#include <SDL2/SDL_video.h>
+#include <SDL3/SDL_video.h>
 
 #include "state.h"
 #include "main_window.h"
@@ -30,7 +30,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
-    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
+    //io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
     //io.ConfigViewportsNoAutoMerge = true;
     //io.ConfigViewportsNoTaskBarIcon = true;
 
@@ -88,9 +88,14 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
     ImGuiIO& io = ImGui::GetIO();
     glViewport(0,0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
-    glClearColor(0,0,0,255);
+    glClearColor(0,0,0,0);
     glClear(GL_COLOR_BUFFER_BIT);
     ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
+    if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        ImGui::UpdatePlatformWindows();
+        ImGui::RenderPlatformWindowsDefault();
+    }
 
     SDL_GL_SwapWindow(sdls.w);
     return SDL_APP_CONTINUE;

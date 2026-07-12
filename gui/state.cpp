@@ -53,7 +53,6 @@ void AppState::rip_image(std::string fname) {
 void AppState::open_pck(std::string fname) {
     if (pck_loaded)
         close_pck();
-
     try {
         core::load_pck(fname);
         reload_pck();
@@ -74,6 +73,8 @@ void AppState::reload_pck() {
     images = std::move(new_images);
     pck_loaded = true;
     current_selected = -1;
+    left_loading = -1;
+    right_loading = -1;
 }
 
 void AppState::close_pck() {
@@ -81,4 +82,6 @@ void AppState::close_pck() {
     core::unload_pck();
     pck_loaded = false;
     current_selected = -1;
+    left_loading = -1;
+    right_loading = -1;
 }

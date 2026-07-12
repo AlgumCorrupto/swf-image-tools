@@ -1,7 +1,6 @@
 #pragma once
 
 #include <SDL3/SDL.h>
-#include <SDL3/SDL_main.h>
 #include <core.h>
 #include <SDL3/SDL_opengl.h>
 
@@ -25,6 +24,8 @@ struct AppState {
     bool pck_loaded = false;
     std::vector<Image> images;
     int current_selected = -1;
+    int left_loading = -1;
+    int right_loading = -1;
 
     void open_pck(std::string fname);
     void reload_pck();
