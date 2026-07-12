@@ -1,0 +1,4 @@
+[submodule "3rdparty/rswf"]
+	path = 3rdparty/rswf
+	url = https://github.com/AlgumCorrupto/RAGE-SWF-research
+	branch = api_refactor
