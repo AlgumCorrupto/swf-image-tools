@@ -12,12 +12,40 @@ struct SdlState {
 
 struct Image {
     core::Ps2Image image;
-    uint32_t gl_texture;
+    GLuint gl_texture = 0;
+
     Image(core::Ps2Image img);
-    void gen_textures();
-    ~Image() {
-        glDeleteTextures(1, &gl_texture);
+
+    Image(const Image&) = delete;
+    Image& operator=(const Image&) = delete;
+
+    Image(Image&& other) noexcept
+        : image(std::move(other.image)),
+          gl_texture(other.gl_texture)
+    {
+        other.gl_texture = 0;
     }
+
+    Image& operator=(Image&& other) noexcept
+    {
+        if (this != &other) {
+            if (gl_texture)
+                glDeleteTextures(1, &gl_texture);
+
+            image = std::move(other.image);
+            gl_texture = other.gl_texture;
+            other.gl_texture = 0;
+        }
+        return *this;
+    }
+
+    ~Image()
+    {
+        if (gl_texture)
+            glDeleteTextures(1, &gl_texture);
+    }
+
+    void gen_textures();
 };
 
 struct AppState {

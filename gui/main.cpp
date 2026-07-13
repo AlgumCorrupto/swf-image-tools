@@ -4,6 +4,7 @@
 #include <SDL3/SDL_main.h>
 #include <SDL3/SDL_opengl.h>
 
+#include <nfd.h>
 #include <backends/imgui_impl_sdl3.h>
 #include <backends/imgui_impl_opengl3.h>
 
@@ -31,8 +32,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
         SDL_WINDOW_HIGH_PIXEL_DENSITY;
 
     sdls.w = SDL_CreateWindow(
-        "Who read this is gay",
-        (int)(1280 * sdls.main_scale),
+        "swf tools",
+        (int)(800 * sdls.main_scale),
         (int)(800 * sdls.main_scale),
         window_flags
     );
@@ -77,6 +78,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
     ImGui_ImplOpenGL3_Init(nullptr);
 
 
+    NFD_Init();
     mainwindow::init();
 
     return SDL_APP_CONTINUE;
@@ -155,6 +157,8 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
 
     SDL_GL_DestroyContext(sdls.gl);
     SDL_DestroyWindow(sdls.w);
+
+    NFD_Quit();
 
     SDL_Quit();
 }

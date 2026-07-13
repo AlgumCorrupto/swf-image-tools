@@ -120,6 +120,7 @@ namespace mainwindow {
     }
 
     void init() {
+        
         assetbrowser::init();
         assetinfo::init();
     }

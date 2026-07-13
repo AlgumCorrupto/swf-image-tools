@@ -24,12 +24,11 @@ void Image::gen_textures() {
 
     for (auto& c : rgba_tex.colors)
         if(c.a != 0)
-            c.a = 255;
-
+            c.a = c.a * 2 - 1;
 
     glGenTextures(1, &gl_texture);
-printf("Current context = %p\n", SDL_GL_GetCurrentContext());
-printf("Expected context = %p\n", sdls.gl);
+    printf("Current context = %p\n", SDL_GL_GetCurrentContext());
+    printf("Expected context = %p\n", sdls.gl);
     glBindTexture(GL_TEXTURE_2D, gl_texture);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
