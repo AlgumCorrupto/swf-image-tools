@@ -32,6 +32,7 @@ struct AppState {
     void close_pck();
     void save_pck(std::string fname);
     void rip_image(std::string fname);
+    void replace_loadscreen(std::string fname);
 };
 
 extern AppState apps;

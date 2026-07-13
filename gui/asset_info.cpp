@@ -113,6 +113,14 @@ void assetinfo::draw() {
         rip_image();
     }
 
+    if(ImGui::Button("Set left")) {
+        apps.left_loading = apps.current_selected;
+    }
+    ImGui::SameLine();
+    if(ImGui::Button("Set Right")) {
+        apps.right_loading = apps.current_selected;
+    }
+
     ImGui::End();
 }
 

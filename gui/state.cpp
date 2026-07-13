@@ -2,6 +2,7 @@
 #include <core.h>
 
 #include <SDL3/SDL_opengl.h>
+#include <lrenderer.h>
 
 SdlState sdls;
 AppState apps;
@@ -11,8 +12,10 @@ void Image::gen_textures() {
         glDeleteTextures(1, &gl_texture);
 
     auto rgba_tex = core::RgbaImage(image.image);
+
     for (auto& c : rgba_tex.colors)
-        c.a = (c.a > 1) ? 255 : 0;
+        if(c.a != 0)
+            c.a = 255;
 
     glGenTextures(1, &gl_texture);
     glBindTexture(GL_TEXTURE_2D, gl_texture);
@@ -75,6 +78,46 @@ void AppState::reload_pck() {
     current_selected = -1;
     left_loading = -1;
     right_loading = -1;
+}
+
+void AppState::replace_loadscreen(std::string fname) {
+    core::RgbaImage rgba(fname);
+
+    float aspect = static_cast<float>(rgba.width) / rgba.height;
+
+    constexpr float eps = 0.01f;
+
+    bool valid =
+        std::abs(aspect - (float)lrenderer::SCREEN_16_9_W / lrenderer::SCREEN_16_9_H) < eps;
+
+    if (!valid)
+        throw std::runtime_error("Loadscreen must be 16:9 or 4:3");
+
+    auto result = lrenderer::render(
+        rgba,
+        0,
+        0,
+        rgba.width,
+        rgba.height
+    );
+
+    images[left_loading].image.image =
+        core::IndexedImage(
+            std::get<0>(result),
+            images[left_loading].image.image.color_table.size()
+        );
+
+    images[right_loading].image.image =
+        core::IndexedImage(
+            std::get<1>(result),
+            images[right_loading].image.image.color_table.size()
+        );
+
+    images[left_loading].image.write();
+    images[right_loading].image.write();
+
+    images[left_loading].gen_textures();
+    images[right_loading].gen_textures();
 }
 
 void AppState::close_pck() {

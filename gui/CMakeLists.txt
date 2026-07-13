@@ -8,13 +8,17 @@ add_executable(gui WIN32
     asset_info.h
     main_window.cpp
     main_window.h
+    loadimg.cpp
+    loadimg.h
     state.cpp
     state.h
 )
+
 target_link_libraries(gui
     PRIVATE OpenGL::GL
     PRIVATE imgui
     PRIVATE core
+    PRIVATE lrenderer
     PRIVATE SDL3::SDL3
     PRIVATE -static-libgcc
     PRIVATE -static-libstdc++

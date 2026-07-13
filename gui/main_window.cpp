@@ -3,6 +3,7 @@
 #include "state.h"
 #include "asset_browser.h"
 #include <imgui.h>
+#include "loadimg.h"
 
 #include "asset_browser.h"
 #include "asset_info.h"
@@ -102,8 +103,11 @@ namespace mainwindow {
         ImGuiID dockspace_id = ImGui::GetID("MainDockSpace");
         ImGui::DockSpace(dockspace_id);
         ImGui::End();
+
+
         assetbrowser::draw();
         assetinfo::draw();
+        loadimg::draw();
     }
 
     void init() {

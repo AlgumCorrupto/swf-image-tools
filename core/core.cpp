@@ -114,6 +114,12 @@ RgbaImage::RgbaImage(std::string filename)
     }
 }
 
+RgbaImage::RgbaImage(uint32_t width, uint32_t height, RGBAColor* raw_colors) 
+: width(width), height(height), colors(std::vector<RGBAColor>(width*height))
+{
+    std::memcpy(colors.data(), raw_colors, colors.size() * sizeof(RGBAColor));
+}
+
 void RgbaImage::resize(uint32_t new_width, uint32_t new_height)
 {
     SDL_Surface* src = SDL_CreateSurfaceFrom(
@@ -263,9 +269,9 @@ IndexedImage::IndexedImage(bmpInfo1* info) {
         default:
             throw std::runtime_error("Unsupported texture type");
     }
-    for(auto& color : color_table)
-        if(color.a > 0)
-            color.a = 255;
+    //for(auto& color : color_table)
+    //    if(color.a > 0)
+    //        color.a = 255;
 }
 
 IndexedImage::IndexedImage(std::string filename, uint32_t color_count) {
@@ -333,45 +339,74 @@ void Ps2Image::replace(const std::string& filename) {
     write();
 }
 
+static void scale_alpha_127(std::vector<RGBAColor>& colors) {
+    for (auto& c : colors) {
+        c.a = c.a >> 1; // 0..255 -> 0..127
+    }
+}
+
 void Ps2Image::write() {
     bmpInfo1* info = (bmpInfo1*)pckData_get_ptr_from_og(&pck, address);
+
     if(info->height != image.height || info->width != image.width) {
         char error_buf[2048 * 2];
-        snprintf(error_buf, sizeof(error_buf), "Tried writing image with w: %d, h: %d\nBut actual size is w: %d, h: %d", image.width, image.height, info->width, info->height);
+        snprintf(error_buf, sizeof(error_buf),
+                 "Tried writing image with w: %d, h: %d\nBut actual size is w: %d, h: %d",
+                 image.width, image.height, info->width, info->height);
         throw std::runtime_error(error_buf);
     }
+
     ps2Texture* tex = (ps2Texture*)pckData_get_ptr_from_og(&pck, info->ptr_to_tex_data);
     uint8_t* tex_raw = (uint8_t*)pckData_get_ptr_from_og(&pck, tex->ptr_to_texture);
     ps2IndexedColors* idx = (ps2IndexedColors*)pckData_get_ptr_from_og(&pck, info->indexed_colors_ptr);
 
     if(tex->texture_type != type) {
         char error_buf[1024];
-        snprintf(error_buf, sizeof(error_buf), "Texture type mismatch %d != %d", tex->texture_type, type);
+        snprintf(error_buf, sizeof(error_buf),
+                 "Texture type mismatch %d != %d",
+                 tex->texture_type, type);
         throw std::runtime_error(error_buf);
     }
 
+    auto colors = image.color_table;
+    scale_alpha_127(colors);
+
     switch(type) {
         case BPP4_UNSWIZZLED: {
-            swfBITMAP_8bpp_to_4bpp(image.indexes.data(), tex_raw, image.width, image.height);
+            swfBITMAP_8bpp_to_4bpp(image.indexes.data(),
+                                   tex_raw,
+                                   image.width,
+                                   image.height);
+
             std::memcpy(idx->indexed_colors,
-                        image.color_table.data(),
-                        image.color_table.size() * sizeof(RGBAColor));
+                        colors.data(),
+                        colors.size() * sizeof(RGBAColor));
             break;
         }
+
         case BPP8_INDEX_SWIZZLED_BUT_TEXTURE_NOT: {
-            swfBITMAP_swizzle_palette(image.color_table.data(),
-                                      idx->indexed_colors,
-                                      image.color_table.size());
-            std::memcpy(tex_raw, image.indexes.data(), image.width * image.height);
+            swfBITMAP_swizzle_palette(colors.data(),
+                                       idx->indexed_colors,
+                                       colors.size());
+
+            std::memcpy(tex_raw,
+                        image.indexes.data(),
+                        image.width * image.height);
             break;
         }
+
         case BPP8_BOTH_SWIZZLED: {
-            swfBITMAP_swizzle_palette(image.color_table.data(),
-                                      idx->indexed_colors,
-                                      image.color_table.size());
-            swfBITMAP_swizzle8(tex_raw, image.indexes.data(), image.width, image.height);
+            swfBITMAP_swizzle_palette(colors.data(),
+                                       idx->indexed_colors,
+                                       colors.size());
+
+            swfBITMAP_swizzle8(tex_raw,
+                               image.indexes.data(),
+                               image.width,
+                               image.height);
             break;
         }
+
         default:
             throw std::runtime_error("Unsupported texture type");
     }

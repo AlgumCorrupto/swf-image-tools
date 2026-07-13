@@ -36,6 +36,7 @@ struct RgbaImage {
     // constructor from indexed image
     RgbaImage(IndexedImage indexed);
     RgbaImage(std::string filename); // make this
+    RgbaImage(uint32_t width, uint32_t height, RGBAColor* colors);
     void resize(uint32_t new_width, uint32_t new_height); // make this
     void save(const std::string &fname);
 };
