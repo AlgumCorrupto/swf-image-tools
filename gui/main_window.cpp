@@ -1,68 +1,73 @@
 #include "main_window.h"
+
 #include <SDL3/SDL.h>
+#include <imgui.h>
+#include <nfd.h>
+
 #include "state.h"
 #include "asset_browser.h"
-#include <imgui.h>
+#include "asset_info.h"
 #include "loadimg.h"
 
-#include "asset_browser.h"
-#include "asset_info.h"
-
 namespace mainwindow {
-    void pck_selected_cb(void *userdata, const char *const *filelist, int filter) {
-        if (filelist == NULL) {
-            SDL_Log("An error occurred opening the file dialog: %s", SDL_GetError());
-            return;
-        }
 
-        if (*filelist == NULL) {
-            SDL_Log("User canceled the selection.");
-            return;
-        }
+    void load_pck() {
+        nfdu8char_t* path = nullptr;
 
-        apps.open_pck(std::string(filelist[0]));
-    }
+        nfdu8filteritem_t filters[] = {
+            { "PCK Files", "pck" }
+        };
 
-    void save_pck_cb(void *userdata, const char *const *filelist, int filter) {
-        if (filelist == NULL) {
-            return;
-        }
-        if(*filelist == NULL) {
-            return;
-        }
-        SDL_PathInfo info;
-        try {
-            apps.save_pck(std::string(filelist[0]));
-        } catch (std::runtime_error e) {
-            SDL_ShowSimpleMessageBox(
-                SDL_MESSAGEBOX_ERROR,
-                "Oops",
-                "Cant save file!",
-                sdls.w
-            );
+        nfdresult_t result = NFD_OpenDialogU8(
+            &path,
+            filters,
+            1,
+            nullptr
+        );
+
+        if (result == NFD_OKAY) {
+            try {
+                apps.open_pck(path);
+            }
+            catch (const std::runtime_error& e) {
+                SDL_ShowSimpleMessageBox(
+                    SDL_MESSAGEBOX_ERROR,
+                    "Oops",
+                    e.what(),
+                    sdls.w
+                );
+            }
+
+            NFD_FreePathU8(path);
         }
     }
 
     void save_pck() {
-        const SDL_DialogFileFilter filters[] = {
-            { "Pck Files (*.pck)", "pck" },
-        };
-        SDL_ShowSaveFileDialog(save_pck_cb, NULL, sdls.w, filters, 1, "./");
-    }
+        nfdu8char_t* path = nullptr;
 
-    void load_pck() {
-        const SDL_DialogFileFilter filters[] = {
-            { "Pck Files (*.pck)", "pck" },
-        };
-        SDL_ShowOpenFileDialog(
-            pck_selected_cb,
-            NULL,
-            sdls.w,
-            filters,
-            1,
-            "./",
-            false
+        nfdresult_t result = NFD_SaveDialogU8(
+            &path,
+            nullptr,
+            0,
+            nullptr,
+            nullptr
         );
+
+        if (result == NFD_OKAY) {
+            try {
+                apps.save_pck(path);
+            }
+            catch (const std::runtime_error& e) {
+                SDL_ShowSimpleMessageBox(
+                    SDL_MESSAGEBOX_ERROR,
+                    "Oops",
+                    e.what(),
+                    sdls.w
+                );
+            }
+
+            NFD_FreePathU8(path);
+        }
     }
 
     void draw() {
@@ -71,17 +76,22 @@ namespace mainwindow {
 
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::BeginMenu("File")) {
-                if(ImGui::MenuItem("Open pck"))
+
+                if (ImGui::MenuItem("Open pck"))
                     load_pck();
 
-                if(ImGui::MenuItem("Save pck", NULL, false, apps.pck_loaded))
+                if (ImGui::MenuItem("Save pck", nullptr, false, apps.pck_loaded))
                     save_pck();
-                if(ImGui::MenuItem("Close pck", NULL, false, apps.pck_loaded))
+
+                if (ImGui::MenuItem("Close pck", nullptr, false, apps.pck_loaded))
                     apps.close_pck();
-                if(ImGui::MenuItem("Reload pck", NULL, false, apps.pck_loaded))
+
+                if (ImGui::MenuItem("Reload pck", nullptr, false, apps.pck_loaded))
                     apps.reload_pck();
+
                 ImGui::EndMenu();
             }
+
             ImGui::EndMainMenuBar();
         }
 
@@ -100,10 +110,9 @@ namespace mainwindow {
 
         ImGui::Begin("DockSpaceHost", nullptr, flags);
 
-        ImGuiID dockspace_id = ImGui::GetID("MainDockSpace");
-        ImGui::DockSpace(dockspace_id);
-        ImGui::End();
+        ImGui::DockSpace(ImGui::GetID("MainDockSpace"));
 
+        ImGui::End();
 
         assetbrowser::draw();
         assetinfo::draw();
@@ -114,4 +123,5 @@ namespace mainwindow {
         assetbrowser::init();
         assetinfo::init();
     }
+
 }

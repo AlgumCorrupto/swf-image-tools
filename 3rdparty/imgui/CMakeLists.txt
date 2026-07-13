@@ -17,8 +17,8 @@ set(IMGUI_SAUCES
     imstb_truetype.h
     backends/imgui_impl_sdl3.cpp
     backends/imgui_impl_sdl3.h
-    backends/imgui_impl_opengl2.h
-    backends/imgui_impl_opengl2.cpp
+    backends/imgui_impl_opengl3.h
+    backends/imgui_impl_opengl3.cpp
     )
 
 add_library(imgui ${IMGUI_SAUCES})

@@ -8,23 +8,36 @@ SdlState sdls;
 AppState apps;
 
 void Image::gen_textures() {
+    if (!SDL_GL_MakeCurrent(sdls.w, sdls.gl))
+    {
+        printf("SDL_GL_MakeCurrent failed: %s\n", SDL_GetError());
+    }
+    else
+    {
+        printf("Current context = %p\n", SDL_GL_GetCurrentContext());
+    }
     if(gl_texture != 0)
         glDeleteTextures(1, &gl_texture);
 
+    static_assert(sizeof(RGBAColor) == 4);
     auto rgba_tex = core::RgbaImage(image.image);
 
     for (auto& c : rgba_tex.colors)
         if(c.a != 0)
             c.a = 255;
 
-    glGenTextures(1, &gl_texture);
-    glBindTexture(GL_TEXTURE_2D, gl_texture);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glGenTextures(1, &gl_texture);
+printf("Current context = %p\n", SDL_GL_GetCurrentContext());
+printf("Expected context = %p\n", sdls.gl);
+    glBindTexture(GL_TEXTURE_2D, gl_texture);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
     glTexImage2D(
         GL_TEXTURE_2D,
@@ -37,6 +50,13 @@ void Image::gen_textures() {
         GL_UNSIGNED_BYTE,
         rgba_tex.colors.data()
     );
+    
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR)
+        printf("OpenGL error: %x\n", err);
+
+    printf("%u\n", gl_texture);
+    printf("%d\n", glIsTexture(gl_texture));
 
     glBindTexture(GL_TEXTURE_2D, 0);
 }

@@ -22,6 +22,7 @@ target_link_libraries(gui
     PRIVATE SDL3::SDL3
     PRIVATE -static-libgcc
     PRIVATE -static-libstdc++
+    PRIVATE nfd
 )
 
 if(WIN32)

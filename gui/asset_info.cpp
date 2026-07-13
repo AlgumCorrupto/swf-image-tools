@@ -5,67 +5,62 @@
 #include <SDL3/SDL_messagebox.h>
 #include <SDL3/SDL_dialog.h>
 
-void replace_selected_cb(void* userdata, const char * const * filelist, int filter) {
-    if(filelist == NULL)
-        return;
-    if(*filelist == NULL)
-        return;
-    try {
-        apps.images[apps.current_selected].image.replace(std::string(filelist[0]));
-        apps.images[apps.current_selected].gen_textures();
-    } catch(std::runtime_error(e)) {
-        SDL_ShowSimpleMessageBox(
-            SDL_MESSAGEBOX_ERROR,
-            "Image does not match",
-            "Input image needs to be the same resolution as output",
-            sdls.w
-        );
-    }
-    return;
-}
+#include <nfd.h>
 
 void replace_image() {
-    SDL_DialogFileFilter filters  = {"Png images (*.png)", "png"};
-    SDL_ShowOpenFileDialog(
-        replace_selected_cb,
-        NULL,
-        sdls.w,
-        &filters,
-        1,
-        "./",
-        false
-    );
-}
+    nfdu8char_t* path = nullptr;
 
-void rip_image_cb(void* userdata, const char * const * filelist, int filter) {
-    if(filelist == NULL)
-        return;
-    if(*filelist == NULL)
-        return;
-    try {
-        apps.rip_image(std::string(filelist[0]));
-    } catch(std::runtime_error(e)) {
-        SDL_ShowSimpleMessageBox(
-            SDL_MESSAGEBOX_ERROR,
-            "Image does not match",
-            "Input image needs to be the same aspect ratio as output",
-            sdls.w
-        );
+    nfdu8filteritem_t filters[] = {
+        { "PNG images", "png" }
+    };
+
+    nfdresult_t result = NFD_OpenDialogU8(&path, filters, 1, nullptr);
+
+    if (result == NFD_OKAY) {
+        try {
+            apps.images[apps.current_selected].image.replace(path);
+            apps.images[apps.current_selected].gen_textures();
+        }
+        catch (const std::runtime_error&) {
+            SDL_ShowSimpleMessageBox(
+                SDL_MESSAGEBOX_ERROR,
+                "Image does not match",
+                "Input image needs to be the same resolution as output",
+                sdls.w
+            );
+        }
+
+        NFD_FreePathU8(path);
     }
-    return;
 }
 
 void rip_image() {
-    SDL_DialogFileFilter filters  = {"Png images (*.png)", "png"};
-    SDL_ShowSaveFileDialog(
-        rip_image_cb,
-        NULL,
-        sdls.w,
-        &filters,
-        1,
-        "./"
+    nfdu8char_t* path = nullptr;
+
+    nfdresult_t result = NFD_SaveDialogU8(
+        &path,
+        nullptr,    // filter
+        0,
+        nullptr,    // default path
+        nullptr     // default name
     );
+
+    if (result == NFD_OKAY) {
+        try {
+            apps.rip_image(path);
+        }
+        catch (const std::runtime_error&) {
+            SDL_ShowSimpleMessageBox(
+                SDL_MESSAGEBOX_ERROR,
+                "Image does not match",
+                "Input image needs to be the same aspect ratio as output",
+                sdls.w
+            );
+        }
+
+        NFD_FreePathU8(path);
     }
+}
 
 void assetinfo::draw() {
 

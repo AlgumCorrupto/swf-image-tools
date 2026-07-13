@@ -17,6 +17,12 @@ FetchContent_Declare(
     GIT_TAG release-3.4.12 
 )
 FetchContent_MakeAvailable(sdl)
+FetchContent_Declare(
+    nfd
+    GIT_REPOSITORY https://github.com/btzy/nativefiledialog-extended 
+    GIT_TAG v1.3.0
+)
+FetchContent_MakeAvailable(nfd)
 
 find_package(OpenGL REQUIRED)
 
